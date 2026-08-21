@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kubernetes Learning Reference</title>
+<meta name="description" content="A personal, interactive Kubernetes reference — architecture diagram, component encyclopedia, YAML anatomy, kubectl cheat sheet, and a hands-on tutorial.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect rx='22' width='100' height='100' fill='%23326ce5'/%3E%3Ctext x='50' y='68' font-size='58' font-family='Arial' font-weight='900' fill='white' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <button id="nav-toggle" aria-label="Toggle navigation">☰</button>
+  <strong>K8s Reference</strong>
+</div>
+
+<div class="app-shell">
+
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <span class="k8s-mark">K</span>
+      <span>Kubernetes Reference<small>Personal learning notes</small></span>
+    </div>
+
+    <div class="nav-group-title">Start here</div>
+    <a class="nav-link" href="#overview" data-section="overview">Overview</a>
+    <a class="nav-link" href="#diagram" data-section="diagram">Interactive Diagram</a>
+
+    <div class="nav-group-title">Reference</div>
+    <a class="nav-link" href="#architecture" data-section="architecture">Architecture & Request Flow</a>
+    <a class="nav-link" href="#reference" data-section="reference">Component Encyclopedia</a>
+    <a class="nav-link" href="#yaml" data-section="yaml">YAML Anatomy</a>
+    <a class="nav-link" href="#cheatsheet" data-section="cheatsheet">kubectl Cheat Sheet</a>
+
+    <div class="nav-group-title">Practice</div>
+    <a class="nav-link" href="#tutorial" data-section="tutorial">Hands-On Tutorial</a>
+    <a class="nav-link" href="#troubleshooting" data-section="troubleshooting">Troubleshooting</a>
+
+    <div class="sidebar-footer">
+      Adapted from my <code>kube-self-learn</code> notes.
+      <br>© <span id="footer-year"></span>
+    </div>
+  </nav>
+
+  <main class="main">
+    <div class="content">
+
+      <!-- ============================ OVERVIEW ============================ -->
+      <section class="page-section" id="overview">
+        <div class="section-header">
+          <span class="section-eyebrow">Welcome</span>
+          <h1>Kubernetes Learning Reference</h1>
+          <p class="lead">
+            A self-contained reference for filling gaps in my Kubernetes knowledge —
+            an interactive diagram to see how components relate, a component-by-component
+            encyclopedia with real YAML, a kubectl cheat sheet, and a hands-on tutorial to
+            practice against. Everything here traces back to hands-on notes from Minikube +
+            a two-tier web app / MongoDB capstone.
+          </p>
+        </div>
+
+        <div class="overview-grid">
+          <div class="overview-card" onclick="showSection('diagram')">
+            <h3>🗺️ Interactive Diagram</h3>
+            <p>Click through the cluster's components and watch related pieces light up. Toggle layers to isolate control plane, networking, or storage.</p>
+          </div>
+          <div class="overview-card" onclick="showSection('architecture')">
+            <h3>🏛️ Architecture & Request Flow</h3>
+            <p>Control plane vs. worker nodes, and the exact step-by-step path a <code>kubectl apply</code> takes through the system.</p>
+          </div>
+          <div class="overview-card" onclick="showSection('reference')">
+            <h3>📚 Component Encyclopedia</h3>
+            <p>Every object type — Pod, Deployment, Service, ConfigMap, PVC, and more — with a plain-English explanation, YAML, and gotchas.</p>
+          </div>
+          <div class="overview-card" onclick="showSection('yaml')">
+            <h3>📄 YAML Anatomy</h3>
+            <p>How manifests are structured, the declarative model, and the YAML syntax rules that actually trip people up.</p>
+          </div>
+          <div class="overview-card" onclick="showSection('cheatsheet')">
+            <h3>⌨️ kubectl Cheat Sheet</h3>
+            <p>A searchable, filterable table of the commands actually used day to day.</p>
+          </div>
+          <div class="overview-card" onclick="showSection('tutorial')">
+            <h3>🧪 Hands-On Tutorial</h3>
+            <p>Seven modules, start to finish: Pods → Deployments → Services → Config/Secrets → a full two-tier capstone app.</p>
+          </div>
+        </div>
+
+        <div class="origin-note">
+          <strong>How to use this page:</strong> it's built to be skimmed, not read top to bottom.
+          Jump straight to whatever concept is fuzzy right now — the Interactive Diagram and the
+          Component Encyclopedia are cross-linked, so clicking a box in the diagram jumps to its
+          full write-up, and every reference entry links back to the components it depends on.
+        </div>
+      </section>
+
+      <!-- ============================ DIAGRAM ============================ -->
+      <section class="page-section" id="diagram">
+        <div class="section-header">
+          <span class="section-eyebrow">Explore</span>
+          <h1>Interactive Cluster Diagram</h1>
+          <p class="lead">
+            Click any box to see what it is and highlight everything it directly connects to.
+            Use the layer toggles to isolate just the part of the system you're trying to
+            understand — the whole diagram at once is a lot.
+          </p>
+        </div>
+
+        <div class="diagram-toolbar">
+          <div id="layer-toggles" style="display:contents"></div>
+        </div>
+
+        <div class="diagram-layout">
+          <div class="diagram-frame">
+            <svg id="cluster-diagram" aria-label="Kubernetes cluster component diagram"></svg>
+          </div>
+          <div class="diagram-panel" id="diagram-panel"></div>
+        </div>
+      </section>
+
+      <!-- ============================ ARCHITECTURE ============================ -->
+      <section class="page-section" id="architecture">
+        <div class="section-header">
+          <span class="section-eyebrow">Reference</span>
+          <h1>Architecture & Request Flow</h1>
+          <p class="lead">A cluster is one or more <strong>control-plane nodes</strong> plus a pool of <strong>worker nodes</strong>, connected by a virtual network so the whole thing behaves like one large machine with pooled resources.</p>
+        </div>
+
+        <h2 class="subhead">Why Kubernetes exists</h2>
+        <p>Apps today are built as microservices — code and dependencies packaged into isolated containers. Containers are great in isolation, but manual container management breaks down three ways once you have more than a handful:</p>
+        <ol>
+          <li>The host runs out of resources and containers can't scale further.</li>
+          <li>Containers die and nothing notices or restarts them.</li>
+          <li>The host machine itself dies, and every container on it dies with it, with nothing to bring them back.</li>
+        </ol>
+        <p>Kubernetes automates container lifecycle, scaling, and recovery across many machines at once — guaranteeing <strong>high availability</strong> (no downtime), <strong>scalability</strong> (fast scale up/down under load), and a path to <strong>disaster recovery</strong> (backup/restore, mostly via <code>etcd</code> snapshots).</p>
+
+        <h2 class="subhead">Control plane vs. worker nodes</h2>
+        <p><strong>Worker nodes</strong> run your actual application Pods — the real workload. <strong>Control-plane nodes</strong> run the cluster's "brain" and, in most setups, are deliberately kept free of regular workload Pods so their resources stay available for managing the cluster itself. Production clusters should run at least two control-plane nodes — losing your only one means losing cluster access entirely.</p>
+
+        <h2 class="subhead">The request flow: what happens on <code>kubectl apply</code></h2>
+        <ol class="flow-list" id="request-flow"></ol>
+        <p style="margin-top:14px;"><em>Note the ordering: the Pod object is created first, the container inside it second — never the other way around.</em></p>
+
+        <h2 class="subhead">Object relationship map</h2>
+        <p>A condensed view of how everything nests inside a Namespace:</p>
+        <div id="object-map"></div>
+      </section>
+
+      <!-- ============================ REFERENCE ============================ -->
+      <section class="page-section" id="reference">
+        <div class="section-header">
+          <span class="section-eyebrow">Reference</span>
+          <h1>Component Encyclopedia</h1>
+          <p class="lead">Every object type covered in the diagram, grouped by category. Click a card to expand it — YAML examples, common commands, and gotchas included.</p>
+        </div>
+        <div id="reference-grid"></div>
+      </section>
+
+      <!-- ============================ YAML ============================ -->
+      <section class="page-section" id="yaml">
+        <div class="section-header">
+          <span class="section-eyebrow">Reference</span>
+          <h1>YAML Anatomy</h1>
+          <p class="lead">All cluster configuration is sent to the API server as YAML (or JSON) — this is the language you use to talk to Kubernetes.</p>
+        </div>
+
+        <h2 class="subhead">The declarative model</h2>
+        <p>You declare the <strong>desired state</strong>; Kubernetes continuously works to make <strong>actual state</strong> match it. That reconciliation loop is the basis of self-healing — if a replica dies, the Controller Manager notices and recreates it. Critically, <code>kubectl apply</code> itself is a <strong>one-time</strong> action: it reads your file, patches the difference into the cluster, and exits. Whether anything keeps enforcing that state afterward depends entirely on what kind of object you created — a bare Pod has nothing watching it; a Deployment's ReplicaSet does.</p>
+
+        <h2 class="subhead">Two YAML data types you'll use constantly</h2>
+        <p><strong>Lists / sequences</strong> — items prefixed with a dash:</p>
+        <pre class="raw-yaml">- milk
+- eggs
+- bread</pre>
+        <p><strong>Dictionaries / mappings</strong> — key/value pairs, order doesn't matter:</p>
+        <pre class="raw-yaml">flavor: chocolate
+expires: June 30
+organic: true</pre>
+        <p><strong>Indentation = ownership.</strong> Anything indented under a key belongs to that key. Nesting lists inside dictionaries (and vice versa) is how complex manifests are built. Tip: never write a manifest from scratch — search the Kubernetes docs for the object type and adapt the example. It saves you from indentation and typo disasters.</p>
+
+        <h2 class="subhead">Every manifest has the same three parts</h2>
+        <pre class="raw-yaml">apiVersion: v1     # which API handles this object type — must match, or you get errors
+kind: Pod          # case-sensitive! "pod" is not the same as "Pod"
+metadata:
+  name: nginx      # 1. Metadata — name, labels, etc.
+spec:              # 2. Specification — the config specific to this object type
+  containers:
+    - name: nginx
+      image: nginx  # must be spelled correctly or the image won't be found
+# 3. Status — auto-generated & continuously updated by Kubernetes, sourced from etcd.
+#    You never write this yourself; kubectl get/describe shows it to you.</pre>
+
+        <h2 class="subhead">Gotchas worth memorizing</h2>
+        <ul>
+          <li><code>apiVersion</code> changes across Kubernetes versions — upgrading a cluster can deprecate old API versions and silently break old manifests.</li>
+          <li><code>kind</code> is case-sensitive: <code>Pod</code> ≠ <code>pod</code>.</li>
+          <li>Keys are camelCase: <code>configMap</code>, not <code>Configmap</code> or <code>config_map</code>.</li>
+          <li><code>spec.containers</code> (and most nested resource lists) is a YAML <strong>list</strong> — don't forget the leading dash.</li>
+          <li>A Deployment's <code>spec.selector.matchLabels</code> must exactly match <code>spec.template.metadata.labels</code> — this is the single most common cause of "my pods aren't showing up."</li>
+        </ul>
+      </section>
+
+      <!-- ============================ CHEATSHEET ============================ -->
+      <section class="page-section" id="cheatsheet">
+        <div class="section-header">
+          <span class="section-eyebrow">Reference</span>
+          <h1>kubectl Cheat Sheet</h1>
+          <p class="lead">Search or filter by category. These are the commands that actually get used day to day.</p>
+        </div>
+
+        <div class="cheatsheet-controls">
+          <input type="search" id="cheatsheet-search" class="cheatsheet-search" placeholder="Search commands… e.g. rollout, logs, scale">
+        </div>
+        <div class="cheatsheet-cats" id="cheatsheet-cats"></div>
+        <div id="cheatsheet-count" style="margin-top:10px;"></div>
+        <div class="cheatsheet-table-wrap">
+          <table class="cheatsheet-table">
+            <thead><tr><th>Command</th><th>What it does</th><th>Category</th></tr></thead>
+            <tbody id="cheatsheet-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============================ TUTORIAL ============================ -->
+      <section class="page-section" id="tutorial">
+        <div class="section-header">
+          <span class="section-eyebrow">Practice</span>
+          <h1>Hands-On Tutorial</h1>
+          <p class="lead">A step-by-step, copy-paste-able walkthrough on Minikube: Pods → Deployments → Services → Config/Secrets → a full two-tier web app + MongoDB capstone. Each module ends with a checkpoint.</p>
+        </div>
+        <div class="tutorial-controls">
+          <button type="button" id="tutorial-expand-all">Expand all</button>
+          <button type="button" id="tutorial-collapse-all">Collapse all</button>
+        </div>
+        <div id="tutorial-list"></div>
+      </section>
+
+      <!-- ============================ TROUBLESHOOTING ============================ -->
+      <section class="page-section" id="troubleshooting">
+        <div class="section-header">
+          <span class="section-eyebrow">Practice</span>
+          <h1>Troubleshooting</h1>
+          <p class="lead">The failure modes that actually show up while working through this material, and the fastest way to confirm the cause.</p>
+        </div>
+        <div id="troubleshooting-list"></div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<script src="assets/data.js"></script>
+<script src="assets/diagram.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
