@@ -327,7 +327,8 @@ function showSection(id) {
   const sidebar = document.getElementById("sidebar");
   sidebar?.classList.remove("open");
   window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
-  history.replaceState(null, "", "#" + id);
+  // pushState so the browser Back button returns to the previous section
+  if (location.hash !== "#" + id) history.pushState(null, "", "#" + id);
 }
 window.showSection = showSection;
 
@@ -342,9 +343,14 @@ function setupNav() {
     document.getElementById("sidebar")?.classList.toggle("open");
   });
 
-  const initial = (location.hash || "#overview").slice(1);
-  const valid = document.getElementById(initial) ? initial : "overview";
-  showSection(valid);
+  const fromHash = () => {
+    const id = (location.hash || "#overview").slice(1);
+    return document.getElementById(id) ? id : "overview";
+  };
+  const initial = fromHash();
+  history.replaceState(null, "", "#" + initial);
+  showSection(initial);
+  window.addEventListener("popstate", () => showSection(fromHash()));
 }
 
 /* ---- copy-to-clipboard delegation ---------------------------------------*/
